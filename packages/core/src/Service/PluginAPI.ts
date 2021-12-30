@@ -70,7 +70,10 @@ export default class PluginAPI {
     plugins[this.id].enableBy = enableBy || EnableBy.register;
   }
 
+  //service.hooksByPluginId 中存储的是所有 plugin 的 hook 列表，key 就是 pluginId，value 是 hook 列表。 
+  //register 方法是为 hooksByPluginId 赋值的。
   register(hook: IHook) {
+    // key 必须是个 str
     assert(
       hook.key && typeof hook.key === 'string',
       `api.register() failed, hook.key must supplied and should be string, but got ${hook.key}.`,
@@ -79,6 +82,9 @@ export default class PluginAPI {
       hook.fn && typeof hook.fn === 'function',
       `api.register() failed, hook.fn must supplied and should be function, but got ${hook.fn}.`,
     );
+
+    // 将这个 hook 放在 hooksByPluginId 中
+    // key 是 plugin 或是 preset 的 id，value 是一系列的 hook
     this.service.hooksByPluginId[this.id] = (
       this.service.hooksByPluginId[this.id] || []
     ).concat(hook);

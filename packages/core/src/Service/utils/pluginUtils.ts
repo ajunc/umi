@@ -44,6 +44,14 @@ export function isPluginOrPreset(type: PluginType, name: string) {
   }
 }
 
+// getPluginsOrPresets 方法获得该项目的所有 preserts，或者是 plugins。
+
+// 以 preserts 为例，项目 presets 来源有四处。
+
+// 1、构造 Service 传参，@umijs/preset-built-in。
+// 2、process.env 中指定。
+// 3、package.json 中 devDependencies 指定，命名规则符合 /^(@umijs\/|umi-)preset-/ 这个正则。这一点就很牛逼了，只要安装，不用配置，就能使用。
+// 4、用户在 .umirc.ts 文件中配置。
 function getPluginsOrPresets(type: PluginType, opts: IOpts): string[] {
   const upperCaseType = type.toUpperCase();
   return [
@@ -68,6 +76,8 @@ function getPluginsOrPresets(type: PluginType, opts: IOpts): string[] {
         )}`,
       );
     }
+    // 变为绝对路径
+    // extensions 表示该路径下顺位寻找 js 或是 ts 文件
     return resolve.sync(path, {
       basedir: opts.cwd,
       extensions: ['.js', '.ts'],
@@ -108,13 +118,16 @@ export function pathToObj({
   assert(existsSync(path), `${type} ${path} not exists, pathToObj failed`);
 
   const pkgJSONPath = pkgUp.sync({ cwd: path });
+  // 找到路径下的 package.json 文件
   if (pkgJSONPath) {
     pkg = require(pkgJSONPath);
+    // isPkgPlugin 表示是 persets
     isPkgPlugin =
       winPath(join(dirname(pkgJSONPath), pkg.main || 'index.js')) ===
       winPath(path);
   }
 
+  // 设置 id
   let id;
   if (isPkgPlugin) {
     id = pkg!.name;
@@ -128,6 +141,8 @@ export function pathToObj({
   id = id.replace('@umijs/preset-built-in/lib/plugins', '@@');
   id = id.replace(/\.js$/, '');
 
+  // 设置 key
+  // key 是驼峰式
   const key = isPkgPlugin
     ? pkgNameToKey(pkg!.name, type)
     : nameToKey(basename(path, extname(path)));
@@ -150,8 +165,10 @@ export function pathToObj({
   };
 }
 
+// resolvePresets 方法从四处获得 presets 全集的路径，然后根据路径获得 presets 文件。
 export function resolvePresets(opts: IResolvePresetsOpts) {
   const type = PluginType.preset;
+  // 获得 presets 路径
   const presets = [...getPluginsOrPresets(type, opts)];
   debug(`preset paths:`);
   debug(presets);

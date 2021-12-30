@@ -146,21 +146,27 @@ export default class Config {
   }
 
   getUserConfig() {
+    // 从 CONFIG_FILES 中找到存在的第一个文件
     const configFile = this.getConfigFile();
     this.configFile = configFile;
     // 潜在问题：
     // .local 和 .env 的配置必须有 configFile 才有效
     if (configFile) {
       let envConfigFile;
+      // UMI_ENV 是在命令行或者是配置在 .env 文件中的，用于指定不同环境各自的配置文件
       if (process.env.UMI_ENV) {
+        // 某个环境下文件名
+        // .umirc.ts 文件，如果 UMI_ENV 是 cloud，那 envConfigFileName 就是 .umirc.cloud.js
         const envConfigFileName = this.addAffix(
           configFile,
           process.env.UMI_ENV,
         );
+        // 去掉后缀
         const fileNameWithoutExt = envConfigFileName.replace(
           extname(envConfigFileName),
           '',
         );
+        // 获得某个环境下文件
         envConfigFile = getFile({
           base: this.cwd,
           fileNameWithoutExt,
@@ -172,6 +178,11 @@ export default class Config {
           );
         }
       }
+      // 最终决定 umi 配置的是这三个文件
+      // 1. .umirc.ts
+      // 2. .umirc.cloud.js
+      // 3. 如果是 development 环境，还会多一个文件 .umirc.local.js
+      // 这三个文件依次判断是否存在
       const files = [
         configFile,
         envConfigFile,
@@ -182,17 +193,30 @@ export default class Config {
         .filter((f) => existsSync(f));
 
       // clear require cache and set babel register
+
+      // files 中文件的路径有两点问题
+      // 1. 不同系统表示文件路径方式不一致
+      // 2. .umirc.ts 中可能 require 了其它文件
+      // parseRequireDeps 就是解决这两个问题
       const requireDeps = files.reduce((memo: string[], file) => {
         memo = memo.concat(parseRequireDeps(file));
         return memo;
       }, []);
+      // 被引入的模块将被缓存在这个对象中
+      // cleanRequireCache 用于清理缓存
       requireDeps.forEach(cleanRequireCache);
+
+      // 执行到这里，requireDeps 中的文件就是此次 umi 项目的配置文件
+
+      // 都用 service setOnlyMap 方法，key 值为 config
       this.service.babelRegister.setOnlyMap({
         key: 'config',
         value: requireDeps,
       });
 
       // require config and merge
+      // requireConfigs 获得每个文件 export 的对象
+      // mergeConfig 使用 deepmerge 库进行了 js 对象的深度合并
       return this.mergeConfig(...this.requireConfigs(files));
     } else {
       return {};
@@ -219,6 +243,8 @@ export default class Config {
 
   getConfigFile(): string | null {
     // TODO: support custom config file
+
+    // umi 找文件的使用的是 find，所以只会找第一个!!!
     const configFile = this.configFiles.find((f) =>
       existsSync(join(this.cwd, f)),
     );
