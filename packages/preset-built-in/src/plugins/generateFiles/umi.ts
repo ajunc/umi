@@ -19,18 +19,22 @@ export function importsToStr(
 
 export default function (api: IApi) {
   const {
-    utils: { Mustache },
+    utils: { Mustache }, // js引擎模板
   } = api;
 
+  // onGenerateFiles 生成临时文件，触发时机在 webpack 编译之前
   api.onGenerateFiles(async (args) => {
+    // 模板文件
     const umiTpl = readFileSync(join(__dirname, 'umi.tpl'), 'utf-8');
     const rendererPath = await api.applyPlugins({
       key: 'modifyRendererPath',
       type: api.ApplyPluginsType.modify,
       initialValue: renderReactPath,
     });
+    // 调用之前的 writeTmpFile 方法写文件
     api.writeTmpFile({
       path: 'umi.ts',
+      // 替换模板中预先定义的变量
       content: Mustache.render(umiTpl, {
         // @ts-ignore
         enableTitle: api.config.title !== false,
@@ -41,6 +45,7 @@ export default function (api: IApi) {
         enableSSR: !!api.config.ssr,
         enableHistory: !!api.config.history,
         dynamicImport: !!api.config.dynamicImport,
+        // 在入口文件最后添加代码。
         entryCode: (
           await api.applyPlugins({
             key: 'addEntryCode',
@@ -48,6 +53,7 @@ export default function (api: IApi) {
             initialValue: [],
           })
         ).join('\r\n'),
+        // 在入口文件最前面（import 之后）添加代码。
         entryCodeAhead: (
           await api.applyPlugins({
             key: 'addEntryCodeAhead',
@@ -55,6 +61,7 @@ export default function (api: IApi) {
             initialValue: [],
           })
         ).join('\r\n'),
+        // 添加补充相关的 import，在整个应用的最前面执行。
         polyfillImports: importsToStr(
           await api.applyPlugins({
             key: 'addPolyfillImports',
@@ -62,6 +69,7 @@ export default function (api: IApi) {
             initialValue: [],
           }),
         ).join('\r\n'),
+        // 在入口文件现有 import 的前面添加 import。
         importsAhead: importsToStr(
           await api.applyPlugins({
             key: 'addEntryImportsAhead',
@@ -69,6 +77,7 @@ export default function (api: IApi) {
             initialValue: [],
           }),
         ).join('\r\n'),
+        // 在入口文件现有 import 的后面添加 import。
         imports: importsToStr(
           await api.applyPlugins({
             key: 'addEntryImports',

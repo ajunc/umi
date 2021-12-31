@@ -55,7 +55,7 @@ export default function (api: IApi) {
   ].forEach((name) => {
     api.registerMethod({ name });
   });
-
+  // 写临时文件
   api.registerMethod({
     name: 'writeTmpFile',
     fn({

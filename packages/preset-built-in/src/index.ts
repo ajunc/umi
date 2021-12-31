@@ -95,3 +95,13 @@ export default function () {
     ],
   };
 }
+// 将 plugin 分为了这么 6 类
+
+// register methods：定义 method。
+// router：路由相关。
+// generate files：插件会生成一些代码，这些产检就是负责提供文件管理的。
+// bundle configs：webpack 相关，和 webpack 的生命周期结合，读取用户配置，生成 webpack 配置。
+// html：提供 html 的管理功能。
+// commands：我们执行的 umi dev 等命令，是由这些插件实现的。
+
+// umi 的插件化的流程就看完了，插件提供了不同生命周期中需要调用的方法，umi 来控制这些方法调用的生命周期。

@@ -5,6 +5,8 @@ import { join } from 'path';
 export default async ({ api, watch }: { api: IApi; watch?: boolean }) => {
   const { paths } = api;
 
+  // 生成临时文件
+  // 想要生成文件，实现 onGenerateFiles 方法
   async function generate(files?: { event: string; path: string }[]) {
     api.logger.debug('generate files', files);
     await api.applyPlugins({
@@ -19,8 +21,9 @@ export default async ({ api, watch }: { api: IApi; watch?: boolean }) => {
   const watchers: chokidar.FSWatcher[] = [];
 
   await generate();
-
+  // watch 表示是否监听文件的变化
   if (watch) {
+    // 添加重新临时文件生成的监听路径
     const watcherPaths = await api.applyPlugins({
       key: 'addTmpGenerateWatcherPaths',
       type: api.ApplyPluginsType.add,
@@ -36,6 +39,7 @@ export default async ({ api, watch }: { api: IApi; watch?: boolean }) => {
     lodash
       .uniq<string>(watcherPaths.map((p: string) => winPath(p)))
       .forEach((p: string) => {
+        // 生成监听
         createWatcher(p);
       });
     // process.on('SIGINT', () => {
@@ -49,7 +53,8 @@ export default async ({ api, watch }: { api: IApi; watch?: boolean }) => {
       watcher.close();
     });
   }
-
+  
+  // Nodejs里的 chokidar 模块可以更好的对文件进行监控，不会产生多次的事件
   function createWatcher(path: string) {
     const watcher = chokidar.watch(path, {
       // ignore .dotfiles and _mock.js

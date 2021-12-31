@@ -14,6 +14,7 @@ const logger = new Logger('umi:preset-build-in');
 export default function (api: IApi) {
   const {
     paths,
+    // rimraf 包的作用：以包的形式包装rm -rf命令，用来删除文件和文件夹的，不管文件夹是否为空，都可删除.
     utils: { rimraf },
   } = api;
 
@@ -21,14 +22,17 @@ export default function (api: IApi) {
     name: 'build',
     description: 'build application for production',
     fn: async function () {
+      // 删除 absTmpPath 路径下非  .cache 文件，具体代码很简单，就不看了
       cleanTmpPathExceptCache({
         absTmpPath: paths.absTmpPath!,
       });
 
       // generate files
+      // 生成文件 onGenerateFiles hook
       await generateFiles({ api, watch: false });
 
       // build
+      // 生成配置信息
       const { bundler, bundleConfigs, bundleImplementor } =
         await getBundleAndConfigs({ api });
       try {
@@ -39,7 +43,8 @@ export default function (api: IApi) {
             rimraf.sync(paths.absOutputPath);
           }
         }
-
+        
+        // bundler 调用 build 方法，进行打包
         const { stats } = await bundler.build({
           bundleConfigs,
           bundleImplementor,
@@ -50,6 +55,7 @@ export default function (api: IApi) {
           });
         }
         printFileSizes(stats!, relative(process.cwd(), paths.absOutputPath!));
+        // 构建完成时可以做的事。可能是失败的，注意判断 err 参数
         await api.applyPlugins({
           key: 'onBuildComplete',
           type: api.ApplyPluginsType.event,

@@ -4,7 +4,7 @@ import { dirname } from 'path';
 
 export default (api: IApi) => {
   const { paths, pkg, cwd } = api;
-
+  // 注册阶段执行，用于描述插件或插件集的 id、key、配置信息、启用方式等
   api.describe({
     key: 'alias',
     config: {
@@ -45,13 +45,18 @@ export default (api: IApi) => {
 
   // 另一种实现方式:
   // 提供 projectFirstLibraries 的配置方式，但是不通用，先放插件层实现
+
+  // 通过 webpack-chain 的方式修改 webpack 配置
+  // chainWebpack 会在 执行 umi start 或 build 命令的时候执行
   api.chainWebpack(async (memo) => {
+    // 添加以项目依赖为优先的依赖库列表，返回值为 { name: string; path: string }。
     const libraries: {
       name: string;
       path: string;
     }[] = await api.applyPlugins({
       key: 'addProjectFirstLibraries',
       type: api.ApplyPluginsType.add,
+      // 优先使用项目依赖的 react 和 react-dom 的版本
       initialValue: [
         {
           name: 'react',

@@ -17,12 +17,18 @@ export async function getBundleAndConfigs({
   port?: number;
 }) {
   // bundler
+  // 比如用于切换到 parcel 或 rollup 做构建。
   const Bundler = await api.applyPlugins({
     type: api.ApplyPluginsType.modify,
     key: 'modifyBundler',
+
+    // 使用 webpack 的话，就是 DefaultBundler
+    // import { Bundler as DefaultBundler, webpack } from '@umijs/bundler-webpack';
+    // 是对 webpack 的封装
     initialValue: DefaultBundler,
   });
 
+  // 比如用于切换到 webpack@5 或其他
   const bundleImplementor = await api.applyPlugins({
     key: 'modifyBundleImplementor',
     type: api.ApplyPluginsType.modify,
@@ -32,6 +38,7 @@ export async function getBundleAndConfigs({
   // get config
   async function getConfig({ type }: { type: IBundlerConfigType }) {
     const env: Env = api.env === 'production' ? 'production' : 'development';
+    // modifyBundleConfigOpts：修改获取 bundleConfig 的函数参数
     const getConfigOpts = await api.applyPlugins({
       type: api.ApplyPluginsType.modify,
       key: 'modifyBundleConfigOpts',
@@ -46,6 +53,7 @@ export async function getBundleAndConfigs({
         },
         // @ts-ignore
         bundleImplementor,
+        // 修改 babel 配置项
         async modifyBabelOpts(opts: any, args?: any) {
           return await api.applyPlugins({
             type: api.ApplyPluginsType.modify,
@@ -54,6 +62,7 @@ export async function getBundleAndConfigs({
             args,
           });
         },
+        // 修改 @umijs/babel-preset-umi 的配置项。
         async modifyBabelPresetOpts(opts: any, args?: any) {
           return await api.applyPlugins({
             type: api.ApplyPluginsType.modify,
@@ -62,6 +71,8 @@ export async function getBundleAndConfigs({
             args,
           });
         },
+        // 通过 webpack-chain 的方式修改 webpack 配置。
+        // 所有的 修改 webpack 配置都是这么干的
         async chainWebpack(webpackConfig: any, opts: any) {
           return await api.applyPlugins({
             type: api.ApplyPluginsType.modify,
@@ -79,6 +90,8 @@ export async function getBundleAndConfigs({
         mfsu,
       },
     });
+    // 修改 bundle 配置
+    // 好多 plugin 都是在这个阶段实现的，比如 modifyPublicPathStr，modifyHTMLChunks，addHTMLHeadScripts，addHTMLLinks 等
     return await api.applyPlugins({
       type: api.ApplyPluginsType.modify,
       key: 'modifyBundleConfig',
@@ -99,6 +112,7 @@ export async function getBundleAndConfigs({
     env: api.env,
     bundler: { id: Bundler.id, version: Bundler.version },
   };
+  // 修改 bundle 配置数组，比如可用于 dll、modern mode 的处理
   const bundleConfigs = await api.applyPlugins({
     type: api.ApplyPluginsType.modify,
     key: 'modifyBundleConfigs',

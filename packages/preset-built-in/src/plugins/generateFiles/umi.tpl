@@ -12,6 +12,7 @@ import { getRoutes } from './core/routes';
 
 {{{ entryCodeAhead }}}
 
+// 运行时插件，与编译器插件对应，是在运行时执行的插件
 const getClientRender = (args: { hot?: boolean; routes?: any[] } = {}) => plugin.applyPlugins({
   key: 'render',
   type: ApplyPluginsType.compose,
